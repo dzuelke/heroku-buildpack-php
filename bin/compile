@@ -26,7 +26,7 @@ echo $ENV_DIR
 
 ls -la $3
 
-if [ -z $ENV_DIR ]; then
+if [ ! -z $ENV_DIR ]; then
     cat $ENV_DIR/BUILDPACK_URL
     export_env_dir "$ENV_DIR" "" '^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH|LD_LIBRARY_PATH)$'
 fi
