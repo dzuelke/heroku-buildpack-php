@@ -21,6 +21,9 @@ echo $BUILDPACK_URL
 # convenience functions
 source $BP_DIR/bin/common.sh
 
+echo $3
+echo $ENV_DIR
+
 ls -la $3
 
 if [ -z $ENV_DIR ]; then
