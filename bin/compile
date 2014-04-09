@@ -21,15 +21,16 @@ echo $BUILDPACK_URL
 # convenience functions
 source $BP_DIR/bin/common.sh
 
+ls -la $3
+
 if [ -z $ENV_DIR ]; then
-    ls -la $ENV_DIR
     cat $ENV_DIR/BUILDPACK_URL
     export_env_dir "$ENV_DIR" "" '^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH|LD_LIBRARY_PATH)$'
 fi
 
 echo $BUILDPACK_URL
 
-exit
+exit 1
 
 cd $BUILD_DIR
 
