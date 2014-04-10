@@ -166,6 +166,15 @@ fi
 composer require --no-update --no-interaction --quiet "heroku/heroku-buildpack-php dev-$this_git_tree_ish" | indent
 composer update --no-dev --prefer-dist --optimize-autoloader --no-interaction "heroku/heroku-buildpack-php" | indent
 
+if [ -e .hhconfig ]; then
+	status "Typechecking Hack project..."
+	CHECK_RESULT=`USER=heroku-check $BUILD_DIR/.heroku/php/usr/bin/hh_server --check .`
+	if [ "$CHECK_RESULT" != 'No errors!' ]; then
+		echo 'Typecheck failed!' | indent
+		error "$CHECK_RESULT"
+	fi
+fi
+
 # Update the PATH
 mkdir -p $BUILD_DIR/.profile.d
 # look for composer.json, not composer.lock - maybe someone has a post-install-cmd, but no requires
