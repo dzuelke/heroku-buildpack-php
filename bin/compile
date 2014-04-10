@@ -156,8 +156,8 @@ this_git_tree_ish=${this_git_tree_ish:-master}
 if [[ "$json_empty" == "1" ]]; then
     echo "{}" > composer.json
 fi
-composer require --no-update --no-interaction --quiet "heroku/heroku-buildpack-php dev-$this_git_tree_ish" | indent
-composer update --no-dev --prefer-dist --optimize-autoloader --no-interaction "heroku/heroku-buildpack-php" | indent
+composer require --update-no-dev --prefer-dist --no-interaction "heroku/heroku-buildpack-php dev-$this_git_tree_ish" | indent
+composer dump-autoload --optimize --no-interaction | indent
 
 # Update the PATH
 mkdir -p $BUILD_DIR/.profile.d
