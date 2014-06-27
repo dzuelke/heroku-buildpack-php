@@ -263,6 +263,15 @@ cd $BUILD_DIR/$composer_bindir
 ln -s $relbins .
 cd $BUILD_DIR
 
+if [ -e .hhconfig ]; then
+	status "Typechecking Hack project..."
+	CHECK_RESULT=`USER=heroku-check $BUILD_DIR/.heroku/php/usr/bin/hh_server --check .`
+	if [ "$CHECK_RESULT" != 'No errors!' ]; then
+		echo 'Typecheck failed!' | indent
+		error "$CHECK_RESULT"
+	fi
+fi
+
 # Update the PATH
 mkdir -p $BUILD_DIR/.profile.d
 cat > $BUILD_DIR/.profile.d/php.sh <<EOF
