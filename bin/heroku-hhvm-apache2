@@ -263,7 +263,7 @@ trap 'trap - EXIT; echo "Going down, terminating child processes..." >&2; rm -f 
 ( touch "${logs[@]}"; tail -qF -n 0 "${logs[@]}" 1>&2 || true; echo 'tail "${logs[@]}"' >&3; ) &
 # start HHVM; write "hhvm" to the shared pipe if it exits
 echo "Starting hhvm..." >&2
-( hhvm --mode server -d "hhvm.server.type=fastcgi" -d "hhvm.server.file_socket=/tmp/heroku.fcgi.${PORT}.sock" "${php_config[@]}" || true; echo "hhvm" >&3; ) &
+( hhvm --mode server "${php_config[@]}" || true; echo "hhvm" >&3; ) &
 # wait a few seconds for HHVM to finish initializing; otherwise an early request might break Apache with the FastCGI pipe not being ready
 # start apache; write "httpd" to the shared pipe if it exits
 echo "Starting httpd..." >&2
