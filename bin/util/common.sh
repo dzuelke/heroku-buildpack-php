@@ -53,3 +53,31 @@ export_env_dir() {
     done
   fi
 }
+
+merge_bucket() {
+    ret=$(curl --fail --silent --location "$1") || error "Failed to fetch list of items for the following S3 bucket:
+$1" 1>&2
+    # fixme: handle malformed data without messages, broken pipe error etc
+    # fixme: check "Truncated" field to see if we need to fetch more
+    # fixme: use two arguments (URL, then stack name) instead, and fetch matching stack items manually from list, assembling final URLs with the given URL to allow buckets that just look like, but are not actually on, S3?
+    ret="$(echo "$ret" | python -c 'import xml.etree.ElementTree as ET, sys, re
+s3 = ET.parse(sys.stdin)
+bucket = s3.getroot().findtext("{http://s3.amazonaws.com/doc/2006-03-01/}Name")
+prefix = s3.getroot().findtext("{http://s3.amazonaws.com/doc/2006-03-01/}Prefix")
+items = s3.findall("./{http://s3.amazonaws.com/doc/2006-03-01/}Contents")
+ret = [
+    re.match("^"+re.escape(prefix)+"((?:[a-z0-9-]+/)*[a-z-0-9-]+?)-?(((?<=-)\d[\.\d]*)[._-]?(?:(stable|beta|b|RC|alpha|a|patch|pl|p)(?:[.-]?(\d+))?)?([.-]?dev)?)?\.tar\.gz$", item.findtext("{http://s3.amazonaws.com/doc/2006-03-01/}Key").strip()).groups("0.0.0")[0:2]
+    +
+    (
+        item.findtext("{http://s3.amazonaws.com/doc/2006-03-01/}Size").strip(),
+        "https://"+bucket+".s3.amazonaws.com/"+item.findtext("{http://s3.amazonaws.com/doc/2006-03-01/}Key").strip()
+    )
+    for item in items if item.findtext("{http://s3.amazonaws.com/doc/2006-03-01/}Key").strip()[-1] != "/"
+]
+print "\n".join(["\t".join(item) for item in ret])')
+${2:-''}" 2>/dev/null || error "Failed to parse list of items for the following S3 bucket:
+${1}" 1>&2
+    # first, stable sort (to preserve order of "overriding" items occuring first) by field 1 (component name), then field 2 (version; version sort does not matter), and use unique mode so the first occurrence remains
+    # then, nuke all entries where field 3 (size) is 0, as that's the method of removing a previously available entry
+    echo "$ret" | sort --stable --unique -k1,2 | awk '$3 > 0'
+}

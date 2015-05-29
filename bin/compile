@@ -90,13 +90,11 @@ mkdir -p .heroku/php
 export COMPOSER_HOME=$CACHE_DIR/.composer
 mkdir -p $COMPOSER_HOME
 
+packages=$(merge_bucket "https://lang-php-stable.s3.amazonaws.com/?prefix=$STACK/")
+runtimes=$(echo "$packages" | grep -E '^(php|hhvm)\t' | cut -f 1,2 | tr '\t' "-")
+
 PHP_VERSION=
 HHVM_VERSION=
-if [[ "$STACK" == "cedar" ]]; then
-    runtimes=$(cd $BP_DIR/support/build; ls {php-5*,hhvm-3.2.0}) # cedar only has HHVM 3.2 and no PHP 7
-else
-    runtimes=$(cd $BP_DIR/support/build; ls {php,hhvm}-*)
-fi
 engine="php"
 engine_r="php -r"
 if [[ -f "composer.json" ]]; then
@@ -183,7 +181,7 @@ ln -s $BUILD_DIR/.heroku/php /app/.heroku/php
 export PATH=/app/.heroku/php/bin:$PATH
 
 if [[ "${PHP_VERSION}" ]]; then
-    PHP_DIST_URL="$S3_URL/php-$PHP_VERSION.tar.gz"
+    PHP_DIST_URL=$(echo "$packages" | grep -E "^php\\t$PHP_VERSION\\t" | cut -f 4)
     echo "- PHP $PHP_VERSION" | indent
     curl --silent --location "$PHP_DIST_URL" | tar xz -C $BUILD_DIR/.heroku/php
     PHP_EXT_DIR=$(php-config --extension-dir)
@@ -197,7 +195,7 @@ if [[ "${PHP_VERSION}" ]]; then
     echo $PHP_VERSION > $BUILD_DIR/.heroku/php/.versions/php/php
 fi
 if [[ "${HHVM_VERSION}" ]]; then
-    HHVM_DIST_URL="$S3_URL/hhvm-$HHVM_VERSION.tar.gz"
+    HHVM_DIST_URL=$(echo "$packages" | grep -E "^hhvm\\t$HHVM_VERSION\\t" | cut -f 4)
     echo "- HHVM $HHVM_VERSION" | indent
     curl --silent --location "$HHVM_DIST_URL" | tar xz -C $BUILD_DIR/.heroku/php
     # store HHVM version in the slug for possible later evaluation
@@ -210,8 +208,7 @@ if [[ "${HHVM_VERSION}" ]]; then
     export -f hhvm
 fi
 
-APACHE_VERSION="2.4.10"
-APACHE_DIST_URL="$S3_URL/apache-$APACHE_VERSION.tar.gz"
+read APACHE_VERSION APACHE_DIST_URL <<< $(echo "$packages" | grep -E '^apache\t' | sort -t. -k1.8,1nr -k 2,2nr -k 3,3nr | head -n1 | cut -f 2,4) # first field, sort from eight character to ignore "apache " at the beginning
 echo "- Apache $APACHE_VERSION" | indent
 curl --silent --location "$APACHE_DIST_URL" | tar xz -C $BUILD_DIR/.heroku/php
 # Apache; copy in our config
@@ -220,8 +217,7 @@ cp $BP_DIR/conf/apache2/httpd.conf.default $BUILD_DIR/.heroku/php/etc/apache2/ht
 mkdir -p $BUILD_DIR/.heroku/php/.versions/apache2
 echo $APACHE_VERSION > $BUILD_DIR/.heroku/php/.versions/apache2/apache2
 
-NGINX_VERSION="1.6.0"
-NGINX_DIST_URL="$S3_URL/nginx-$NGINX_VERSION.tar.gz"
+read NGINX_VERSION NGINX_DIST_URL <<< $(echo "$packages" | grep -E '^nginx\t' | sort -t. -k1.7,1nr -k 2,2nr -k 3,3nr | head -n1 | cut -f 2,4) # first field, sort from seventh character to ignore "nginx " at the beginning
 echo "- Nginx $NGINX_VERSION" | indent
 curl --silent --location "$NGINX_DIST_URL" | tar xz -C $BUILD_DIR/.heroku/php
 # nginx; copy in our config
