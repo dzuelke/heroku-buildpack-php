@@ -63,10 +63,7 @@ BUILDPACK_URL=${BUILDPACK_URL:-} # Anvil has none
 BUILDPACK_BRANCH=$(expr "$BUILDPACK_URL" : '^.*/heroku-buildpack-php#\(..*\)$' || expr "$BUILDPACK_URL" : '^.*/heroku-buildpack-php\.git#\(..*\)$' || true) # POSIX expr doesn't understand ".+" or "(\.git)?"
 BUILDPACK_BRANCH=${BUILDPACK_BRANCH:-master}
 
-if [[ "$BUILDPACK_BRANCH" != v* && "$BUILDPACK_BRANCH" != "master" ]]; then
-    S3_URL="develop"
-fi
-S3_URL="https://lang-php.s3.amazonaws.com/dist-${STACK}-${S3_URL:-"master"}"
+PLATFORM_PACKAGE_SOURCES="https://lang-php-stable.s3.amazonaws.com/ ${PLATFORM_PACKAGE_SOURCES:-}"
 RTVS_URL="https://php-runtime-version-selector.herokuapp.com"
 
 cd $BUILD_DIR
@@ -90,7 +87,17 @@ mkdir -p .heroku/php
 export COMPOSER_HOME=$CACHE_DIR/.composer
 mkdir -p $COMPOSER_HOME
 
-packages=$(merge_bucket "https://lang-php-stable.s3.amazonaws.com/?prefix=$STACK/")
+status "Fetching list of platform packages..."
+packages=
+for bucket in $PLATFORM_PACKAGE_SOURCES; do
+    if [[ "$bucket" == "-" ]]; then
+        # a "-" in the string means we reset the list; people can have a fully custom bucket that way
+        packages=
+    else
+        packages=$(merge_bucket "$bucket/?prefix=$STACK/" "$packages")
+    fi
+done
+echo "... done, $(echo "$packages" | wc -l) packages available." | indent
 runtimes=$(echo "$packages" | grep -E '^(php|hhvm)\t' | cut -f 1,2 | tr '\t' "-")
 
 PHP_VERSION=
