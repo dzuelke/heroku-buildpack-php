@@ -398,6 +398,14 @@ install_blackfire_agent
 
 if [[ ! -f "Procfile" ]]; then
     bindir=$(composer config bin-dir 2> /dev/null | tail -n 1) # tail, as composer echos outdated version warnings to STDOUT
-    echo "web: $bindir/heroku-$engine-apache2" > Procfile
-    notice_inline "No Procfile, using 'web: $bindir/heroku-$engine-apache2'."
+    if [[ "${APACHE_VERSION}" ]]; then
+        default_procfile_web="web: $bindir/heroku-$engine-apache2"
+    elif [[ "${NGINX_VERSION}" ]]; then
+        default_procfile_web="web: $bindir/heroku-$engine-nginx"
+    else
+        # FIXME: HHVM?
+        default_procfile_web="web: php -S 0.0.0.0:\$PORT"
+    fi
+    echo "$default_procfile_web" > Procfile
+    notice_inline "No Procfile, using '$default_procfile_web'."
 fi
