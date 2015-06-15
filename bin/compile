@@ -183,6 +183,14 @@ if [[ "${PHP_VERSION}" ]]; then
     cp $BP_DIR/conf/php/php.ini $BUILD_DIR/.heroku/php/etc/php
     cp $BP_DIR/conf/php/php-fpm.conf $BUILD_DIR/.heroku/php/etc/php
     mkdir -p $BUILD_DIR/.heroku/php/etc/php/conf.d
+    if [[ "${PHP7_BUILD_BOOST:-}" ]]; then
+        cp $BUILD_DIR/.heroku/php/etc/php/php.ini $BUILD_DIR/.heroku/php/etc/php/php-cli.ini
+        mkdir -p $CACHE_DIR/php/7.0/opcache
+        echo "
+opcache.enable_cli=1
+opcache.file_cache=$CACHE_DIR/php/7.0/opcache
+opcache.file_cache_only=1" >> $BUILD_DIR/.heroku/php/etc/php/php-cli.ini
+    fi
     # store PHP version in the slug for possible later evaluation
     mkdir -p $BUILD_DIR/.heroku/php/.versions/php
     echo $PHP_VERSION > $BUILD_DIR/.heroku/php/.versions/php/php
@@ -384,4 +392,8 @@ if [[ ! -f "Procfile" ]]; then
     bindir=$(composer config bin-dir 2> /dev/null | tail -n 1) # tail, as composer echos outdated version warnings to STDOUT
     echo "web: $bindir/heroku-$engine-apache2" > Procfile
     notice_inline "No Procfile, using 'web: $bindir/heroku-$engine-apache2'."
+fi
+
+if [[ "${PHP7_BUILD_BOOST:-}" ]]; then
+    rm $BUILD_DIR/.heroku/php/etc/php/php-cli.ini
 fi
