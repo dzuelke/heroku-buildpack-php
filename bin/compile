@@ -385,3 +385,10 @@ if [[ ! -f "Procfile" ]]; then
     echo "web: $bindir/heroku-$engine-apache2" > Procfile
     notice_inline "No Procfile, using 'web: $bindir/heroku-$engine-apache2'."
 fi
+
+if cat composer.json | python -c 'import sys,json; sys.exit("release" not in json.load(sys.stdin).get("scripts", {}));'; then
+    warning "Will use 'composer release' on all upcoming release steps."
+    mkdir -p .heroku/bin/
+    echo 'composer run-script --no-dev --no-interaction release 2>&1' > .heroku/bin/release
+    chmod a+x .heroku/bin/release
+fi
