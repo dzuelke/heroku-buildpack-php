@@ -364,7 +364,7 @@ fi
     tail -qF -n 0 "${logs[@]}" > "$logs_pipe" & logs_procs+=($!)
     sed $sedbufarg -E -e 's/^\[[^]]+\] WARNING: \[pool [^]]+\] child [0-9]+ said into std(err|out): "(.*)("|...)$/\2\3/' -e 's/"$//' < "$logs_pipe" 1>&2 & logs_procs+=($!) # messages that are too long are cut off using "..." by FPM instead of closing double quotation marks; we want to preserve those three dots but not the closing double quotes
     disown "${logs_procs[@]}"
-    wait $!
+    wait "${logs_procs[@]}"
 ) & pids+=($!)
 disown $!
 
