@@ -327,8 +327,10 @@ fi
 # 2c) finally, if $BASHPID exists, the subshell kills itself using the right signal for maximum compliance ($$ doesn't work in subshells, and $BASHPID is not available in Bash 3, but unlike with the parent, it's not that critical to have this)
 # 3) each subshell has another trap on USR1 which gets sent when the parent is cleaning up; it works like 2a) but doesn't trigger the EXIT trap to avoid multiple cleanup runs by the parent
 # 4) execute the command in the background
-# 5) 'wait' on the command (wait is interrupted by an incoming TERM to the subshell, whereas running 4) in the foreground would wait for that process to finish before triggering the trap)
-# 6) add the PID of the subshell to the array that the EXIT trap further above uses to clean everything up
+# 5) 'disown' the command to prevent "Terminated" messages when things get killed (http://wiki.bash-hackers.org/snipplets/kill_bg_job_without_message)
+# 6) 'wait' on the command (wait is interrupted by an incoming TERM to the subshell, whereas running 4) in the foreground would wait for that process to finish before triggering the trap)
+# 7) add the PID of the subshell to the array that the EXIT trap further above uses to clean everything up
+# 8) 'disown' the subshell (see 5)
 
 [[ $verbose ]] && echo "Starting log redirection..." >&2
 (
@@ -361,8 +363,10 @@ fi
     
     tail -qF -n 0 "${logs[@]}" > "$logs_pipe" & logs_procs+=($!)
     sed $sedbufarg -E -e 's/^\[[^]]+\] WARNING: \[pool [^]]+\] child [0-9]+ said into std(err|out): "(.*)("|...)$/\2\3/' -e 's/"$//' < "$logs_pipe" 1>&2 & logs_procs+=($!) # messages that are too long are cut off using "..." by FPM instead of closing double quotation marks; we want to preserve those three dots but not the closing double quotes
+    disown "${logs_procs[@]}"
     wait
 ) & pids+=($!)
+disown $!
 
 echo "Starting php-fpm..." >&2
 (
@@ -371,8 +375,10 @@ echo "Starting php-fpm..." >&2
     trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID 2> /dev/null' TERM
     trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
     php-fpm --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} &
+    disown $!
     wait
 ) & pids+=($!)
+disown $!
 
 # wait a few seconds for FPM to finish initializing; otherwise an early request might break Apache with the FastCGI pipe not being ready
 sleep 2
@@ -384,8 +390,10 @@ echo "Starting httpd..." >&2
     trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID 2> /dev/null' TERM
     trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
     httpd -D NO_DETACH -c "Include $httpd_config" &
+    disown $!
     wait
 ) & pids+=($!)
+disown $!
 
 # on Heroku, there is a "state changed from starting to up", but for local execution, we want a "ready" message
 [[ -z ${DYNO:-} || $verbose ]] && echo "Application ready for connections on port $PORT." >&2
