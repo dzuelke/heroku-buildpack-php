@@ -343,8 +343,8 @@ fi
     # FIXME: fires when the subshell or the tail is killed, but not when the sed is killed, because... pipes :( maybe we can do http://mywiki.wooledge.org/ProcessManagement#My_script_runs_a_pipeline.__When_the_script_is_killed.2C_I_want_the_pipeline_to_die_too.
     trap '' INT;
     trap 'echo "tail" >&3;' EXIT
-    trap 'trap - TERM; jobs -p | xargs -n1 kill -TERM 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID' TERM
-    trap 'trap - USR1 EXIT; jobs -p | xargs -n1 kill -TERM 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID' USR1
+    trap 'trap - TERM; jobs -p | xargs -n1 kill -TERM 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID 2> /dev/null' TERM
+    trap 'trap - USR1 EXIT; jobs -p | xargs -n1 kill -TERM 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
     touch "${logs[@]}"
     if [[ $(uname) == "Darwin" ]]; then
         sedbufarg="-l" # mac/bsd sed: -l buffers on line boundaries
@@ -359,8 +359,8 @@ echo "Starting php-fpm..." >&2
 (
     trap '' INT;
     trap 'echo "php-fpm" >&3;' EXIT
-    trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID' TERM
-    trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID' USR1
+    trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID 2> /dev/null' TERM
+    trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
     php-fpm --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} &
     wait
 ) & pids+=($!)
@@ -372,8 +372,8 @@ echo "Starting httpd..." >&2
 (
     trap '' INT;
     trap 'echo "httpd" >&3;' EXIT
-    trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID' TERM
-    trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID' USR1
+    trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID 2> /dev/null' TERM
+    trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
     httpd -D NO_DETACH -c "Include $httpd_config" &
     wait
 ) & pids+=($!)
