@@ -307,7 +307,7 @@ pids=()
 # 2d) || true so that set -e doesn't cause a mess if the kill returns 1 on "no such process" cases (which is likely on Heroku where all processes get killed and not just this top level one)
 # 2e) do that in the background and 'wait' on those processes, sending wait's output to /dev/null - this prevents the logs getting cluttered with "vendor/bin/heroku-...: line 309:    96 Terminated" messages (we can't use 'disown' after launching programs for that purpose because that removes the jobs from the shell's jobs table and the we can no longer 'wait' on the program)
 # 3) kill ourselves with the correct signal in case we're handling SIGQUIT or SIGTERM (http://www.cons.org/cracauer/sigint.html and http://mywiki.wooledge.org/SignalTrap#Special_Note_On_SIGINT1)
-cleanup() { echo "Going down, terminating child processes..." >&2; rm -f ${wait_pipe} || true; kill -USR1 "${pids[@]}" 2> /dev/null || true; wait "${pids[@]}" 2> /dev/null; }
+cleanup() { echo "Going down, terminating child processes..." >&2; rm -f ${wait_pipe} || true; kill -USR1 "${pids[@]}" || true; wait "${pids[@]}" || true; }
 trap 'trap - QUIT EXIT; cleanup; kill -QUIT $$' QUIT
 trap 'trap - TERM EXIT; cleanup; kill -TERM $$' TERM
 trap 'trap - EXIT; cleanup' EXIT
@@ -350,8 +350,8 @@ fi
     
     trap '' INT;
     trap 'echo "tail" >&3;' EXIT
-    trap 'trap - TERM; kill "${logs_procs[@]}" 2> /dev/null || true; wait "${logs_procs[@]}" 2> /dev/null; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID 2> /dev/null' TERM
-    trap 'trap - USR1 EXIT; kill "${logs_procs[@]}" 2> /dev/null || true; wait "${logs_procs[@]}" 2> /dev/null; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
+    trap 'trap - TERM; kill "${logs_procs[@]}" || true; wait "${logs_procs[@]}" 2> /dev/null; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID || true' TERM
+    trap 'trap - USR1 EXIT; kill "${logs_procs[@]}" || true; wait "${logs_procs[@]}" 2> /dev/null; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID || true' USR1
     
     touch "${logs[@]}"
     
@@ -370,8 +370,8 @@ echo "Starting php-fpm..." >&2
 (
     trap '' INT;
     trap 'echo "php-fpm" >&3;' EXIT
-    trap 'trap - TERM; kill -TERM $! 2> /dev/null || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID 2> /dev/null' TERM
-    trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
+    trap 'trap - TERM; kill -TERM $! || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID || true' TERM
+    trap 'trap - USR1 EXIT; kill -TERM $! || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID || true' USR1
     php-fpm --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} &
     wait
 ) & pids+=($!)
@@ -383,8 +383,8 @@ echo "Starting httpd..." >&2
 (
     trap '' INT;
     trap 'echo "httpd" >&3;' EXIT
-    trap 'trap - TERM; kill -TERM $! 2> /dev/null || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID 2> /dev/null' TERM
-    trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
+    trap 'trap - TERM; kill -TERM $! || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID || true' TERM
+    trap 'trap - USR1 EXIT; kill -TERM $! || true; wait $! 2> /dev/null; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID || true' USR1
     httpd -D NO_DETACH -c "Include $httpd_config" &
     wait
 ) & pids+=($!)
