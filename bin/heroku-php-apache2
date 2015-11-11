@@ -365,6 +365,7 @@ fi
     sed $sedbufarg -E -e 's/^\[[^]]+\] WARNING: \[pool [^]]+\] child [0-9]+ said into std(err|out): "(.*)("|...)$/\2\3/' -e 's/"$//' < "$logs_pipe" 1>&2 & logs_procs+=($!) # messages that are too long are cut off using "..." by FPM instead of closing double quotation marks; we want to preserve those three dots but not the closing double quotes
     wait
 ) & pids+=($!)
+disown $!
 
 echo "Starting php-fpm..." >&2
 (
@@ -375,6 +376,7 @@ echo "Starting php-fpm..." >&2
     php-fpm --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} & pid=$!
     wait
 ) & pids+=($!)
+disown $!
 
 # wait a few seconds for FPM to finish initializing; otherwise an early request might break Apache with the FastCGI pipe not being ready
 sleep 2
@@ -388,6 +390,7 @@ echo "Starting httpd..." >&2
     httpd -D NO_DETACH -c "Include $httpd_config" & pid=$!
     wait
 ) & pids+=($!)
+disown $!
 
 # on Heroku, there is a "state changed from starting to up", but for local execution, we want a "ready" message
 [[ -z ${DYNO:-} || $verbose ]] && echo "Application ready for connections on port $PORT." >&2
