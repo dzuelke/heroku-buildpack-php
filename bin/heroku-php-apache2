@@ -306,7 +306,7 @@ pids=()
 # 2c) send STDERR to /dev/null so we don't see "no such process" errors - after all, one of the subshells may be gone
 # 2d) || true so that set -e doesn't cause a mess if the kill returns 1 on "no such process" cases (which is likely)
 # 3) kill ourselves with the correct signal in case we're handling SIGQUIT or SIGTERM (http://www.cons.org/cracauer/sigint.html and http://mywiki.wooledge.org/SignalTrap#Special_Note_On_SIGINT1)
-cleanup() { echo "Going down, terminating child processes..." >&2; rm -f ${wait_pipe} || true; kill -USR1 "${pids[@]}" 2> /dev/null || true; }
+cleanup() { echo "Going down, terminating child processes..." >&2; rm -f ${wait_pipe} || true; kill -USR1 "${pids[@]}" 2> /dev/null || true; wait "${pids[@]}" 2> /dev/null; }
 trap 'trap - QUIT EXIT; cleanup; kill -QUIT $$' QUIT
 trap 'trap - TERM EXIT; cleanup; kill -TERM $$' TERM
 trap 'trap - EXIT; cleanup' EXIT
@@ -363,10 +363,8 @@ fi
     
     tail -qF -n 0 "${logs[@]}" > "$logs_pipe" & logs_procs+=($!)
     sed $sedbufarg -E -e 's/^\[[^]]+\] WARNING: \[pool [^]]+\] child [0-9]+ said into std(err|out): "(.*)("|...)$/\2\3/' -e 's/"$//' < "$logs_pipe" 1>&2 & logs_procs+=($!) # messages that are too long are cut off using "..." by FPM instead of closing double quotation marks; we want to preserve those three dots but not the closing double quotes
-    disown "${logs_procs[@]}"
-    wait "${logs_procs[@]}"
+    wait 2> /dev/null
 ) & pids+=($!)
-disown $!
 
 echo "Starting php-fpm..." >&2
 (
@@ -375,10 +373,8 @@ echo "Starting php-fpm..." >&2
     trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID 2> /dev/null' TERM
     trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
     php-fpm --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} &
-    disown $!
-    wait $!
+    wait 2> /dev/null
 ) & pids+=($!)
-disown $!
 
 # wait a few seconds for FPM to finish initializing; otherwise an early request might break Apache with the FastCGI pipe not being ready
 sleep 2
@@ -390,10 +386,8 @@ echo "Starting httpd..." >&2
     trap 'trap - TERM; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -TERM $BASHPID 2> /dev/null' TERM
     trap 'trap - USR1 EXIT; kill -TERM $! 2> /dev/null; [[ $BASHPID ]] && kill -USR1 $BASHPID 2> /dev/null' USR1
     httpd -D NO_DETACH -c "Include $httpd_config" &
-    disown $!
-    wait $!
+    wait 2> /dev/null
 ) & pids+=($!)
-disown $!
 
 # on Heroku, there is a "state changed from starting to up", but for local execution, we want a "ready" message
 [[ -z ${DYNO:-} || $verbose ]] && echo "Application ready for connections on port $PORT." >&2
