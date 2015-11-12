@@ -350,8 +350,8 @@ fi
     
     trap '' INT;
     trap 'echo "tail" >&3;' EXIT
-    trap 'trap - TERM; kill -TERM "${logs_procs[@]}" 2> /dev/null || true; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID' TERM
-    trap 'trap - USR1 EXIT; kill -TERM "${logs_procs[@]}" 2> /dev/null || true; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID' USR1
+    trap 'trap - TERM; kill -TERM "${logs_procs[@]}" 2> /dev/null || true & wait "${logs_procs[@]}" 2> /dev/null || true; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID' TERM
+    trap 'trap - USR1 EXIT; kill -TERM "${logs_procs[@]}" 2> /dev/null || true & wait "${logs_procs[@]}" 2> /dev/null || true; rm -f $logs_pipe; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID' USR1
     
     touch "${logs[@]}"
     
@@ -371,8 +371,8 @@ echo "Starting php-fpm..." >&2
 (
     trap '' INT;
     trap 'echo "php-fpm" >&3;' EXIT
-    trap 'trap - TERM; kill -TERM $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID' TERM
-    trap 'trap - USR1 EXIT; kill -TERM $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID' USR1
+    trap 'trap - TERM; kill -TERM $pid 2> /dev/null || true & wait $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID' TERM
+    trap 'trap - USR1 EXIT; kill -TERM $pid 2> /dev/null || true & wait $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID' USR1
     php-fpm --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} & pid=$!
     wait 2> /dev/null
 ) & pids+=($!)
@@ -385,8 +385,8 @@ echo "Starting httpd..." >&2
 (
     trap '' INT;
     trap 'echo "httpd" >&3;' EXIT
-    trap 'trap - TERM; kill -TERM $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID' TERM
-    trap 'trap - USR1 EXIT; kill -TERM $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID' USR1
+    trap 'trap - TERM; kill -TERM $pid 2> /dev/null || true & wait $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -TERM $BASHPID' TERM
+    trap 'trap - USR1 EXIT; kill -TERM $pid 2> /dev/null || true & wait $pid 2> /dev/null || true; [[ ${BASHPID:-} ]] && kill -USR1 $BASHPID' USR1
     httpd -D NO_DETACH -c "Include $httpd_config" & pid=$!
     wait 2> /dev/null
 ) & pids+=($!)
