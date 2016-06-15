@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Build Path: /app/.heroku/php/
+
+FORMULA_FILE=$(basename $0)
+VERSION=${FORMULA_FILE/"tideways-"/""}
+
+source $(dirname $0)/../no-debug-non-zts-20121212/tideways-${VERSION}
+
