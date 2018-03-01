@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# bin/dependencies <build-dir> <dependencies-report-root-dir>
+
+# fail hard
+set -o pipefail
+# fail harder
+set -eu
+# move hidden files too, just in case
+shopt -s dotglob
+
+STACK=${STACK:-cedar-14} # Anvil has none
+build_dir=$1
+deps_dir=$2
+bp_dir=$(cd $(dirname $0); cd ..; pwd)
+
+# convenience functions
+source $bp_dir/bin/util/common.sh
+
+mkdir -p $deps_dir/php
+
+cd $build_dir
+
+composer show --installed --format=json > $deps_dir/php/dependencies.json
+composer show --platform --format=json > $deps_dir/php/platform.json
