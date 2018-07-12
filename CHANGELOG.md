@@ -1,5 +1,11 @@
 # heroku-buildpack-php CHANGELOG
 
+## v1?? (2018-??-??)
+
+### CHG
+
+- Remove use of composer.phar in project root [David Zuelke]
+
 ## v139 (2018-07-20)
 
 ### ADD
