@@ -64,6 +64,7 @@ array_shift($argv);
 // base repos we need - no packagist, and the installer plugin path (first arg)
 $repositories = [
 	["packagist" => false],
+	["type" => "pear", "url" => "https://pecl.php.net"],
 	["type" => "path", "url" => array_shift($argv), "options" => ["symlink" => false]],
 ];
 // all other args are repo URLs; they get passed in ascending order of precedence, so we reverse
