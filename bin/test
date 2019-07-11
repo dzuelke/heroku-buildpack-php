@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+# bin/test <build-dir>
+
+# fail hard
+set -o pipefail
+# fail harder
+set -eu
+
+echo "pwd:"
+pwd
+
+echo "args:"
+echo "$@"
+
+exit 1
