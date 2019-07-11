@@ -9,8 +9,14 @@ set -eu
 
 echo "pwd:"
 pwd
+echo
 
 echo "args:"
 echo "$@"
+echo
+
+echo "env":
+env
+echo
 
 exit 1
