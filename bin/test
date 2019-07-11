@@ -19,4 +19,11 @@ echo "env":
 env
 echo
 
+echo "env ls":
+ls "$2"
+echo
+
+echo "env dump":
+cat "$2"/*
+
 exit 1
