@@ -5,7 +5,7 @@
 # fail hard
 set -o pipefail
 # fail harder
-set -eu
+set -eux
 # move hidden files too, just in case
 shopt -s dotglob
 
