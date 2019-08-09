@@ -282,8 +282,12 @@ echo "type composer: $(type composer)"
 echo "command -v composer: $(command -v composer)"
 composer_bin=$(command -v composer ./composer.phar) || { echo "This program requires 'composer' on \$PATH or a 'composer.phar' in the CWD." >&2; exit 1; }
 composer_bin=$(head -n1 <<< "$composer_bin") # if both were there, we'd have two lines of output, no good for invoking something :)
+echo "PRE-FUNC composer config vendor-dir:"
+composer config vendor-dir
 composer() {
 	# check if the composer binary is executable by PHP
+	echo "if in func:"
+	file --brief --dereference "$composer_bin"
 	if file --brief --dereference "$composer_bin" | grep -e "shell" -e "bash" > /dev/null ; then # newer versions of file return "data" for .phar
 		# run it directly; it's probably a bash script or similar (homebrew-php does this)
 		"$composer_bin" "$@"
@@ -291,6 +295,8 @@ composer() {
 		php "$composer_bin" "$@"
 	fi
 }
+echo "POST-FUNC composer config vendor-dir:"
+composer config vendor-dir
 # these exports are used in default web server configs to lock down access to composer directories
 COMPOSER_VENDOR_DIR=$(composer config vendor-dir 2> /dev/null | tail -n 1) && export COMPOSER_VENDOR_DIR || { echo "Unable to determine Composer vendor-dir setting; is 'composer' executable on path or 'composer.phar' in current working directory?" >&2; exit 1; } # tail, as composer echos outdated version warnings to STDOUT; export after the assignment or exit status will that be of 'export
 COMPOSER_BIN_DIR=$(composer config bin-dir 2> /dev/null | tail -n 1) && export COMPOSER_BIN_DIR || { echo "Unable to determine Composer bin-dir setting; is 'composer' executable on path or 'composer.phar' in current working directory?" >&2; exit 1; } # tail, as composer echos outdated version warnings to STDOUT; export after the assignment or exit status will that be of 'export
