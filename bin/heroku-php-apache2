@@ -9,6 +9,14 @@ shopt -s extglob
 # for detecting when -l 'logs/*.log' matches nothing
 shopt -s nullglob
 
+echo "export:"
+export
+echo "aliases:"
+alias -p
+echo "which composer: $(which composer)"
+echo "type composer: $(type composer)"
+echo "command -v composer: $(command -v composer)"
+
 if ! type -p "realpath" > /dev/null; then
 	# cedar-14 and macOS don't have realpath
 	# readlink is not an option because BSD readlink does not have the GNU -f option
@@ -265,6 +273,13 @@ php_version="$(php-fpm -n -v | php -r 'echo preg_replace("#PHP (\S+) \(fpm-fcgi\
 httpd_version="$(httpd -v | php -r 'echo preg_replace("#^Server version: Apache/(\S+).+$#sm", "\\1", file_get_contents("php://stdin"));')"
 
 # make sure we try a local composer.phar if no global installation is available
+echo "export:"
+export
+echo "aliases:"
+alias -p
+echo "which composer: $(which composer)"
+echo "type composer: $(type composer)"
+echo "command -v composer: $(command -v composer)"
 composer_bin=$(command -v composer ./composer.phar) || { echo "This program requires 'composer' on \$PATH or a 'composer.phar' in the CWD." >&2; exit 1; }
 composer_bin=$(head -n1 <<< "$composer_bin") # if both were there, we'd have two lines of output, no good for invoking something :)
 composer() {
