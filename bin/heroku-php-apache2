@@ -416,7 +416,7 @@ cleanup() {
 }
 trap 'trap - TERM EXIT; echo "SIGTERM received, attempting graceful shutdown..." >&2; cleanup USR1; kill -TERM $$' TERM
 # on "regular" EXIT (i.e. when we reached the end of the script because a process exited unexpectedly) just clean up and let the exit status bubble through (see last line)
-trap 'trap - EXIT; echo "Process exited unexpectedly: $exitproc, shutting down..." >&2; cleanup TERM' EXIT
+trap 'trap - EXIT; echo "Process exited unexpectedly: $exitproc, shutting down..." >&2; cleanup USR1' EXIT
 
 # if FD 1 is a TTY (that's the -t 1 check), trap SIGINT/Ctrl+C, then same procedure as for TERM above
 if [[ -t 1 ]]; then
@@ -494,8 +494,9 @@ fpm_pidfile=$(mktemp -t "heroku.php-fpm.pid-$PORT.XXXXXX" -u)
 
 	php-fpm --pid "$fpm_pidfile" --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} & pid=$!
 	# wait for the pidfile in the trap; otherwise, a previous subshell failing may result in us getting a SIGTERM and forwarding it to the child process before that child process is ready to process signals
-	trap 'echo "Stopping php-fpm..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
-	trap 'echo "Stopping php-fpm gracefully..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -QUIT $pid 2> /dev/null || true' USR1
+	trap 'echo "Stopping php-fpm gracefully..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -QUIT $pid 2> /dev/null || true' TERM USR1
+	# we always want to try and stop gracefully, especially since on Heroku we might be getting a process group wide SIGTERM but running a patched PHP-FPM that ignores SIGTERM; to change, uncomment below and remove TERM from the above trap's signals list
+	# trap 'echo "Stopping php-fpm..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
 
 	wait $pid 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
 	trap - TERM USR1
@@ -517,8 +518,9 @@ httpd_pidfile=$(httpd -t -D DUMP_RUN_CFG 2> /dev/null | sed -n -E 's/PidFile: "(
 
 	httpd -D NO_DETACH -c "Include $httpd_config" & pid=$!
 	# wait for the pidfile in the trap; otherwise, a previous subshell failing may result in us getting a SIGTERM and forwarding it to the child process before that child process is ready to process signals
-	trap 'echo "Stopping httpd..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
-	trap 'echo "Stopping httpd gracefully..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -WINCH $pid 2> /dev/null || true' USR1
+	trap 'echo "Stopping httpd gracefully..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -WINCH $pid 2> /dev/null || true' TERM USR1
+	# we always want to try and stop gracefully, especially since on Heroku we might be getting a process group wide SIGTERM but running a patched HTTPD that ignores SIGTERM; to change, uncomment below and remove TERM from the above trap's signals list
+	# trap 'echo "Stopping httpd..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
 
 	# first, we wait for the pid file to be written, so that we can emit a ready message
 	wait_pid_and_pidfile $pid "$httpd_pidfile"
