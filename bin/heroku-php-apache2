@@ -3,7 +3,7 @@
 # fail hard
 set -o pipefail
 # fail harder
-set -eu
+set -eux
 # for ${DOCUMENT_ROOT%%*(/)} pattern further down
 shopt -s extglob
 # for detecting when -l 'logs/*.log' matches nothing
