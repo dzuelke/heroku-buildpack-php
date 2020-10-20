@@ -19,6 +19,20 @@ describe "A PHP application" do
 						expect(output).to match(/^hello world after 5 second\(s\)$/)
 					end
 				end
+				
+				it "gracefully shuts down when all processes receives a SIGTERM and HEROKU_PHP_GRACEFUL_SIGTERM is set", :stack => "heroku-20" do
+					app.deploy do |app|
+						# first, launch in the background and get the pid
+						# then sleep five seconds to allow boot (semicolon before ! needs a space, Bash...)
+						# curl the sleep() script (and remember the curl pid)
+						# pgrep all our user's PIDs, then inverse-grep away $$ (that's our shell) and the curl PID
+						# hand all those PIDs to kill
+						# wait for $pid so that we can be certain to get all the output
+						cmd = "heroku-php-#{server} & pid=$! ; sleep 5; curl \"localhost:$PORT/index.php?wait=5\" & curlpid=$!; sleep 2; pgrep -U $UID -a; kill $(pgrep -U $UID | grep -vw -e $$ -e $curlpid) 2>/dev/null; wait $pid"
+						output = app.run(cmd, { "env" => "HEROKU_PHP_GRACEFUL_SIGTERM=1" })
+						expect(output).to match(/^hello world after 5 second\(s\)$/)
+					end
+				end
 			end
 		end
 	end
