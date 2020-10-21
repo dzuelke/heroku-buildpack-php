@@ -488,7 +488,8 @@ fi
 	fi
 
 	wait 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
-	trap - TERM USR1
+	trap - USR1
+	[[ $graceful_sigterm ]] || trap - TERM
 	wait 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
 ) & pids+=($!)
 
@@ -519,7 +520,8 @@ fpm_pidfile=$(mktemp -t "heroku.php-fpm.pid-$PORT.XXXXXX" -u)
 	fi
 
 	wait $pid 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
-	trap - TERM USR1
+	trap - USR1
+	[[ $graceful_sigterm ]] || trap - TERM
 	wait $pid 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
 ) & pids+=($!)
 
@@ -552,7 +554,8 @@ httpd_pidfile=$(httpd -t -D DUMP_RUN_CFG 2> /dev/null | sed -n -E 's/PidFile: "(
 	[[ -z ${DYNO:-} || $verbose ]] && kill -0 $pid 2> /dev/null && echo "Application ready for connections on port $PORT." >&2
 
 	wait $pid 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
-	trap - TERM USR1
+	trap - USR1
+	[[ $graceful_sigterm ]] || trap - TERM
 	wait $pid 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
 ) & pids+=($!)
 
