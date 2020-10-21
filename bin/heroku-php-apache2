@@ -389,6 +389,10 @@ mkfifo $wait_pipe
 exec 3<> $wait_pipe
 
 pids=()
+graceful_sigterm=
+if [[ "${GRACEFUL_SIGTERM:-0}" != "0" ]]; then
+	graceful_sigterm=1
+fi
 
 # trap SIGTERM (for when we get killed) and EXIT (upon failure of any command due to set -e, or because of the exit at the very end), we then
 # 1) restore the trap for the signal in question so it doesn't fire again due to the kill at the end of the trap, as well as for EXIT, because that would fire too
@@ -466,10 +470,22 @@ fi
 		sedbufarg="-u" # unix/gnu sed: -u unbuffered (arbitrary) chunks of data
 	fi
 
-	tail -qF -n 0 "${logs[@]}" > "$logs_pipe" & logs_procs+=($!)
-	sed $sedbufarg -E -e 's/^\[[^]]+\] WARNING: \[pool [^]]+\] child [0-9]+ said into std(err|out): "(.*)("|...)$/\2\3/' -e 's/"$//' < "$logs_pipe" 1>&2 & logs_procs+=($!) # messages that are too long are cut off using "..." by FPM instead of closing double quotation marks; we want to preserve those three dots but not the closing double quotes
+	(
+		[[ $graceful_sigterm ]] && trap '' TERM
+		exec tail -qF -n 0 "${logs[@]}" > "$logs_pipe"
+	) & logs_procs+=($!)
+	(
+		[[ $graceful_sigterm ]] && trap '' TERM
+		# messages that are too long are cut off using "..." by FPM instead of closing double quotation marks; we want to preserve those three dots but not the closing double quotes
+		exec sed $sedbufarg -E -e 's/^\[[^]]+\] WARNING: \[pool [^]]+\] child [0-9]+ said into std(err|out): "(.*)("|...)$/\2\3/' -e 's/"$//' < "$logs_pipe" 1>&2
+	) & logs_procs+=($!) 
 	# after the kill, we are redirecting stderr to /dev/null using exec to suppress "… Terminated …" messages from the shell, which it would print right before the next command is invoked
-	trap '[[ $verbose ]] && echo "Stopping log redirection..." >&2; kill -TERM "${logs_procs[@]}" 2> /dev/null || true; exec 2> /dev/null' TERM USR1
+	trap '[[ $verbose ]] && echo "Stopping log redirection..." >&2; kill -QUIT "${logs_procs[@]}" 2> /dev/null || true; exec 2> /dev/null' USR1
+	if [[ $graceful_sigterm ]]; then
+		trap '' TERM
+	else
+		trap '[[ $verbose ]] && echo "Stopping log redirection..." >&2; kill -TERM "${logs_procs[@]}" 2> /dev/null || true; exec 2> /dev/null' TERM
+	fi
 
 	wait 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
 	trap - TERM USR1
@@ -494,9 +510,13 @@ fpm_pidfile=$(mktemp -t "heroku.php-fpm.pid-$PORT.XXXXXX" -u)
 
 	php-fpm --pid "$fpm_pidfile" --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} & pid=$!
 	# wait for the pidfile in the trap; otherwise, a previous subshell failing may result in us getting a SIGTERM and forwarding it to the child process before that child process is ready to process signals
-	trap 'echo "Stopping php-fpm gracefully..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -QUIT $pid 2> /dev/null || true' TERM USR1
+	trap 'echo "Stopping php-fpm gracefully..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -QUIT $pid 2> /dev/null || true' USR1
 	# we always want to try and stop gracefully, especially since on Heroku we might be getting a process group wide SIGTERM but running a patched PHP-FPM that ignores SIGTERM; to change, uncomment below and remove TERM from the above trap's signals list
-	# trap 'echo "Stopping php-fpm..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
+	if [[ $graceful_sigterm ]]; then
+		trap '' TERM
+	else
+		trap 'echo "Stopping php-fpm..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
+	fi
 
 	wait $pid 2> /dev/null || true # redirect stderr to prevent possible trap race condition warnings
 	trap - TERM USR1
@@ -518,9 +538,13 @@ httpd_pidfile=$(httpd -t -D DUMP_RUN_CFG 2> /dev/null | sed -n -E 's/PidFile: "(
 
 	httpd -D NO_DETACH -c "Include $httpd_config" & pid=$!
 	# wait for the pidfile in the trap; otherwise, a previous subshell failing may result in us getting a SIGTERM and forwarding it to the child process before that child process is ready to process signals
-	trap 'echo "Stopping httpd gracefully..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -WINCH $pid 2> /dev/null || true' TERM USR1
-	# we always want to try and stop gracefully, especially since on Heroku we might be getting a process group wide SIGTERM but running a patched HTTPD that ignores SIGTERM; to change, uncomment below and remove TERM from the above trap's signals list
-	# trap 'echo "Stopping httpd..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
+	trap 'echo "Stopping httpd gracefully..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -WINCH $pid 2> /dev/null || true' USR1
+	# we always want to try and stop gracefully, so on Heroku where we might be getting a process group wide SIGTERM, when running a patched HTTPD that ignores SIGTERM, we do not set up a corresponding trap
+	if [[ $graceful_sigterm ]]; then
+		trap '' TERM
+	else
+		trap 'echo "Stopping httpd..." >&2; wait_pid_and_pidfile $pid "$httpd_pidfile"; kill -TERM $pid 2> /dev/null || true' TERM
+	fi
 
 	# first, we wait for the pid file to be written, so that we can emit a ready message
 	wait_pid_and_pidfile $pid "$httpd_pidfile"
