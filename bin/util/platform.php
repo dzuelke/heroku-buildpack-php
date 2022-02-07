@@ -52,7 +52,9 @@ function mkmetas($package, array &$metapaks, &$have_runtime_req = false) {
 
 // parse options/flags, then advance $argv pointer (to skip $0, too)
 $flags = getopt("", ["list-repositories"], $rest_index);
+var_dump($argv, $flags);
 $argv = array_slice($argv, $rest_index);
+var_dump($argv);
 
 // base repos we need - no packagist, and the installer plugin path (first arg)
 $repositories = [
