@@ -343,7 +343,7 @@ else
 fi
 export HEROKU_PHP_DEFAULT_RUNTIME_VERSION
 # extract requirements from composer.lock
-/app/.heroku/php-min/bin/php $bp_dir/bin/util/platform.php -- ${have_custom_platform_repos:+"--list-repositories"} "$bp_dir/support/installer/" $HEROKU_PHP_PLATFORM_REPOSITORIES 2>&1 >$build_dir/.heroku/php/composer.json | indent || {
+/app/.heroku/php-min/bin/php $bp_dir/bin/util/platform.php ${have_custom_platform_repos:+"--list-repositories"} "$bp_dir/support/installer/" $HEROKU_PHP_PLATFORM_REPOSITORIES 2>&1 >$build_dir/.heroku/php/composer.json | indent || {
 	code=$?
 	if (( code == 3 )); then
 		mcount "failures.platform.composer_lock.runtime_only_in_dev"
