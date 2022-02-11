@@ -500,9 +500,10 @@ if [[ -s "$providedextensionslog_file_path" ]]; then
 				mv $build_dir/.heroku/php/${COMPOSER}{.bak,} # restore previous composer.json
 				echo -n -e "\r" # reset the line
 				# check whether the extension is already there (this can happen when using legacy PHP packages that do not have the ".native" replaces and target an older installer, triggering the old-style extension enabling)
-				if composer show -d "$build_dir/.heroku/php" -q --platform "$ext_name" 2>/dev/null; then
+				if composer show -d "$build_dir/.heroku/php" --platform "$ext_name"; then
 					echo -e "- ${ext_name} (already enabled)" | indent "" $'\r       '
 				else
+					echo $?
 					notice_inline "no suitable native version of ${ext_name} available"
 				fi
 			fi
