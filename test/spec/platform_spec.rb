@@ -8,7 +8,7 @@ generator_fixtures_subdir = "test/fixtures/platform/generator"
 manifest_fixtures_subdir = "test/fixtures/platform/builder/manifest"
 mkrepo_fixtures_subdir = "test/fixtures/platform/builder/mkrepo"
 
-describe "The PHP Platform Installer" do
+describe "The PHP Platform Installer", :focused => true do
 	describe "composer.json Generator Script" do
 		Dir.each_child(generator_fixtures_subdir) do |testcase|
 			it "produces the expected platform composer.json for case #{testcase}" do
