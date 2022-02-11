@@ -499,7 +499,12 @@ if [[ -s "$providedextensionslog_file_path" ]]; then
 				# composer did not succeed; this means no package that matches all existing package's requirements was found
 				mv $build_dir/.heroku/php/${COMPOSER}{.bak,} # restore previous composer.json
 				echo -n -e "\r" # reset the line
-				notice_inline "no suitable native version of ${ext_name} available"
+				# check whether the extension is already there (this can happen when using legacy PHP packages that do not have the ".native" replaces and target an older installer, triggering the old-style extension enabling)
+				if composer show -d "$build_dir/.heroku/php" -q --platform "$ext_name" 2>/dev/null; then
+					echo -e "- ${ext_name} (already enabled)" | indent "" $'\r       '
+				else
+					notice_inline "no suitable native version of ${ext_name} available"
+				fi
 			fi
 		done
 	done {fd_num}< "$providedextensionslog_file_path" # use bash 4.1+ automatic file descriptor allocation (better than hardcoding e.g. "3<"), otherwise this loop's stdin (the lines of the file) will be consumed by programs called inside the loop
