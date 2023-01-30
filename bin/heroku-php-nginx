@@ -287,6 +287,8 @@ logs+=( "/tmp/heroku.php-fpm.$PORT.log" "/tmp/heroku.php-fpm.www.$PORT.log" "/tm
 # a bunch of checks; don't load any INIs to prevent newrelic etc from loading, we don't need all that stuff
 php -r 'exit((int)version_compare(PHP_VERSION, "5.5.11", "<"));' || { echo "This program requires PHP 5.5.11 or newer; check your 'php' command." >&2; exit 1; }
 { php-fpm -n -v | php -r 'exit((int)version_compare(preg_replace("#PHP (\S+) \(fpm-fcgi\).+$#sm", "\\1", file_get_contents("php://stdin")), "5.5.11", "<"));'; } || { echo "This program requires PHP 5.5.11 or newer; check your 'php-fpm' command." >&2; exit 1; }
+# we need the "server root" for invocation
+server_root=$(cd $(dirname $(which php)); cd ..; pwd)
 
 php_version="$(php-fpm -n -v | php -r 'echo preg_replace("#PHP (\S+) \(fpm-fcgi\).+$#sm", "\\1", file_get_contents("php://stdin"));')"
 nginx_version="$(nginx -v 2>&1 | php -r 'echo preg_replace("#.*nginx/([\d\.]+)$#sm", "\\1", file_get_contents("php://stdin"));')"
@@ -337,7 +339,7 @@ fpm_config=$(php_passthrough "$fpm_config")
 
 # we explicitly use the INI file php-fpm would load if no INI is given
 # this is to ensure that e.g. our WEB_CONCURRENCY calculation doesn't pick up a php-cli.ini
-fpm_ini=$(php-fpm -i | awk -F' => ' '/^Loaded Configuration File/{print $2}')
+fpm_ini=$(php-fpm --prefix "$server_root" -i | awk -F' => ' '/^Loaded Configuration File/{print $2}')
 if [[ -n ${php_config:-} || ( "$fpm_ini" != "(none)" && ${php_config:=$fpm_ini} && $verbose ) ]]; then
 	echo "Using PHP configuration (php.ini) file '${php_config#$HEROKU_APP_DIR/}'" >&2
 fi
@@ -519,7 +521,7 @@ fpm_pidfile=$(mktemp -t "heroku.php-fpm.pid-$PORT.XXXXXX" -u)
 		export PHP_INI_SCAN_DIR=$_PHP_INI_SCAN_DIR
 	fi
 
-	php-fpm --pid "$fpm_pidfile" --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} & pid=$!
+	php-fpm --prefix "$server_root" --pid "$fpm_pidfile" --nodaemonize -y "$fpm_config" ${php_config:+-c "$php_config"} & pid=$!
 	# wait for the pidfile in the trap; otherwise, a previous subshell failing may result in us getting a SIGTERM and forwarding it to the child process before that child process is ready to process signals
 	trap 'echo "Stopping php-fpm gracefully..." >&2; wait_pid_and_pidfile $pid "$fpm_pidfile"; kill -QUIT $pid 2> /dev/null || true' USR1
 	# we always want to try and stop gracefully, especially since on Heroku we might be getting a process group wide SIGTERM but running a patched PHP-FPM that ignores SIGTERM; so if that env var is set, we ignore SIGTERM in this subshell as well
@@ -548,7 +550,7 @@ nginx_pidfile=$(mktemp -t "heroku.nginx.pid-$PORT.XXXXXX" -u)
 
 	echo "Starting nginx..." >&2
 
-	nginx -c "$nginx_main" -g "pid $nginx_pidfile; include $nginx_config;" & pid=$!
+	nginx -p "$server_root" -e "$server_root/var/log/nginx/error.log" -c "$nginx_main" -g "pid $nginx_pidfile; include $nginx_config;" & pid=$!
 	# wait for the pidfile in the trap; otherwise, a previous subshell failing may result in us getting a SIGTERM and forwarding it to the child process before that child process is ready to process signals
 	trap 'echo "Stopping nginx gracefully..." >&2; wait_pid_and_pidfile $pid "$nginx_pidfile"; kill -QUIT $pid 2> /dev/null || true' USR1
 	# we always want to try and stop gracefully, especially since on Heroku we might be getting a process group wide SIGTERM but running a patched Nginx that ignores SIGTERM; so if that env var is set, we ignore SIGTERM in this subshell as well
