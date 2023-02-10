@@ -482,12 +482,15 @@ fi
 	# we do that by setting the handler for SIGTERM to SIG_IGN, then exec-ing the program, which preserves the signal handler (see https://pubs.opengroup.org/onlinepubs/9699919799/functions/execle.html):
 	# "Signals set to the default action (SIG_DFL) in the calling process image shall be set to the default action in the new process image. Except for SIGCHLD, signals set to be ignored (SIG_IGN) by the calling process image shall be set to be ignored by the new process image. Signals set to be caught by the calling process image shall be set to the default action in the new process image (see <signal.h>)."
 	# this of course doesn't work in more complex cases like Nginx or Apache or PHP, which install their own signal handlers on startup, but tail and sed don't do that
+	# we also set SIGINT to SIG_IGN so a Ctrl+C does not kill the redirects for us
 	(
 		[[ $graceful_sigterm ]] && trap '' TERM
+		trap '' INT
 		exec tail -qF -n 0 "${logs[@]}" > "$logs_pipe"
 	) & logs_procs+=($!)
 	(
 		[[ $graceful_sigterm ]] && trap '' TERM
+		trap '' INT
 		# messages that are too long are cut off using "..." by FPM instead of closing double quotation marks; we want to preserve those three dots but not the closing double quotes
 		exec sed $sedbufarg -E -e 's/^\[[^]]+\] WARNING: \[pool [^]]+\] child [0-9]+ said into std(err|out): "(.*)("|...)$/\2\3/' -e 's/"$//' < "$logs_pipe" 1>&2
 	) & logs_procs+=($!)
