@@ -5,6 +5,7 @@
 ### CHG
 
 - Mark Composer versions other than 2.2.x and 2.8+ as incompatible with PHP 8.4 [David Zuelke]
+- Use latest Composer (instead of 2.2 LTS) if no lock file is present [David Zuelke]
 
 ## [v285] - 2026-03-17
 
