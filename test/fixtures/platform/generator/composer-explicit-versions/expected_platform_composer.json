@@ -1,0 +1,66 @@
+{
+    "config": {
+        "allow-plugins": {
+            "heroku/installer-plugin": true
+        },
+        "cache-files-ttl": 0,
+        "discard-changes": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": false,
+    "provide": {
+        "heroku-sys\/heroku": "20.2021.08.03"
+    },
+    "replace": {},
+    "require": {
+        "composer.json\/composer.lock": "dev-ac9deece86a7e8e0c4a8241662974f32",
+        "heroku-sys\/composer": "*",
+        "heroku-sys\/composer-plugin-api": "^2",
+        "heroku-sys\/apache": "^2.4.10",
+        "heroku-sys\/nginx": "^1.8.0"
+    },
+    "require-dev": {},
+    "repositories": [
+        {
+            "packagist": false
+        },
+        {
+            "type": "path",
+            "url": "..\/..\/..\/..\/..\/support\/installer",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "composer",
+            "url": "https://DUMMYPLATFORMHOST/DUMMYPLATFORMPATH"
+        },
+        {
+            "type": "package",
+            "package": [
+                {
+                    "type": "metapackage",
+                    "name": "composer.json\/composer.lock",
+                    "version": "dev-ac9deece86a7e8e0c4a8241662974f32",
+                    "require": {
+                        "heroku-sys\/php": "*",
+                        "heroku-sys\/ext-gmp": "*",
+                        "heroku-sys\/ext-intl": "*",
+                        "heroku-sys\/ext-mbstring": "*",
+                        "heroku-sys\/ext-redis": "*",
+                        "heroku-sys\/ext-sqlite3": "*",
+                        "heroku-sys\/ext-ldap": "*",
+                        "heroku-sys\/ext-imap": "*",
+                        "heroku-sys\/ext-blackfire": "*",
+                        "heroku-sys\/composer": "^2.5.0",
+                        "heroku-sys\/composer-plugin-api": "^2.3.0",
+                        "heroku-sys\/composer-runtime-api": "^2.2.0"
+                    },
+                    "replace": {},
+                    "provide": {},
+                    "conflict": {}
+                }
+            ]
+        }
+    ]
+}

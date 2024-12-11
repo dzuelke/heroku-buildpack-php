@@ -27,8 +27,8 @@ function getflag($number) {
 }
 
 function mkmetas($package, array &$metapaks, &$have_runtime_req = false) {
-	// filter platform packages - only "php", "php-64bit", and "ext-foobar" (but not "ext-foobar.native")
-	$platfilter = function($v) { return preg_match("#^(php(-64bit)?$|ext-.+(?<!\.native)$)#", $v); };
+	// filter platform packages - only "php", "php-64bit", "ext-foobar" (but not "ext-foobar.native"), and composer
+	$platfilter = function($v) { return preg_match("#^(php(-64bit)?|ext-.+(?<!\.native)|composer(-(plugin|runtime)-api)?)$#", $v); };
 	
 	// extract only platform requires, replaces and provides
 	$preq = array_filter(isset($package["require"]) ? $package["require"] : [], $platfilter, ARRAY_FILTER_USE_KEY);
