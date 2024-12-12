@@ -129,9 +129,16 @@ chmod a+x "${OUT_PREFIX}/bin/install.composer.sh"
 
 # Composer 2.3+ requires 7.2.5+
 if [[ $dep_version == 1.* || $dep_version == 2.[012].* ]]; then
-	phpreq=">=5.3.2"
+	phpreq="^5.3.2 || ^7.0"
 else
-	phpreq=">=7.2.5"
+	phpreq="^7.2.5"
+fi
+phpreq+=" || "
+# only 2.2 LTS and 2.8+ support PHP 8.4+ without printing many deprecation warnings to stdout
+if [[ $dep_version == 1.* || $dep_version == 2.[013-7].* ]]; then
+	phpreq+="<8.4"
+else
+	phpreq+="^8.0"
 fi
 
 # the || true (needs to be there, not before the <<-'HEREDOC') prevents 'set -e' induced termination from the 'read' encountering EOF
