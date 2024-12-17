@@ -33,7 +33,7 @@
         },
         {
             "type": "composer",
-            "url": "https:\/\/localhost:8080\/packages.json"
+            "url": "https:\/\/user:pass@localhost:8080\/packages.json"
         },
         {
             "type": "composer",
