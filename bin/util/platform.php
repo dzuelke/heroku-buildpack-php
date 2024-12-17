@@ -74,7 +74,12 @@ if(isset($flags['list-repositories'])) {
 // all other args are repo URLs; they get passed in ascending order of precedence, so we reverse
 foreach(array_reverse($argv) as $repo) {
 	$url = parse_url($repo);
-	if(!$url || !isset($url["scheme"]) || !isset($url["host"])) {
+	if(!$url || (
+		isset($url["scheme"]) && (
+			($url["scheme"] === "file" && !isset($url["path"])) ||
+			($url["scheme"] !== "file" && !isset($url["host"]))
+		)
+	)) {
 		file_put_contents("php://stderr", "ERROR: could not parse platform repository URL '$repo'.\n");
 		exit(4);
 	}
@@ -83,8 +88,8 @@ foreach(array_reverse($argv) as $repo) {
 			"php://stderr",
 			sprintf(
 				"- %s://%s%s%s\n", # hide auth info and query args
-				$url["scheme"],
-				$url["host"],
+				$url["scheme"] ?? "file",
+				$url["host"] ?? "",
 				isset($url["port"]) ? ":".$url["port"] : "",
 				$url["path"]??"/"
 			)

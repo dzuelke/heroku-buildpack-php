@@ -78,7 +78,7 @@ describe "The PHP Platform Installer" do
 					end
 					
 					# not all cases are actually installable (e.g. "composer1" is expected to fail since that is EOL; "customrepo" points to a repo URL that does not actually exist)
-					break if ["blackfire-cli-unknown", "composer1", "customrepo", "require-dev-runtime-only"].include?(testcase)
+					break if ["blackfire-cli-unknown", "composer1", "customrepo", "localfilerepo2", "require-dev-runtime-only"].include?(testcase)
 					
 					# and finally check if it's installable in a dry run
 					# we make a temp dir in the parent dir of the fixture

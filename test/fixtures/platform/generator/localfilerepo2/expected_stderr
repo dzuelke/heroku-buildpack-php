@@ -1,0 +1,3 @@
+[1;33mNOTICE:[0m Platform repositories used (in lookup order):
+- file:///path/to/some/packages.json
+- https://DUMMYPLATFORMHOST/DUMMYPLATFORMPATH
