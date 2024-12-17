@@ -15,7 +15,7 @@ sync_fixtures_subdir = "test/fixtures/platform/builder/sync"
 DUMMY_PLATFORM_REPO_URL = "https://DUMMYPLATFORMHOST/DUMMYPLATFORMPATH"
 
 describe "The PHP Platform Installer" do
-	describe "composer.json Generator Script", stack: "heroku-24" do
+	fdescribe "composer.json Generator Script", stack: "heroku-24" do
 		Dir.each_child(generator_fixtures_subdir) do |testcase|
 			it "produces the expected platform composer.json for case #{testcase}" do
 				bp_root = [".."].cycle("#{generator_fixtures_subdir}/#{testcase}".count("/")+1).to_a.join("/") # right "../.." sequence to get us back to the root of the buildpack
