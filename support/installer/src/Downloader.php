@@ -7,12 +7,23 @@ use Composer\IO\IOInterface;
 use Composer\Config;
 use Composer\EventDispatcher\EventDispatcher;
 use Composer\Cache;
+use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\Util\Filesystem;
+use Composer\Util\HttpDownloader;
 use Composer\Util\ProcessExecutor;
 use Composer\Package\PackageInterface;
 use React\Promise\PromiseInterface;
 
 class Downloader extends TarDownloader
 {
+	protected $humanIo;
+	
+	public function __construct(IOInterface $io, Config $config, HttpDownloader $httpDownloader, ?EventDispatcher $eventDispatcher = null, ?Cache $cache = null, ?Filesystem $filesystem = null, ?ProcessExecutor $process = null, IOInterface $humanIo)
+	{
+		$this->humanIo = $humanIo;
+		return parent::__construct($io, $config, $httpDownloader, $eventDispatcher, $cache, $filesystem, $process);
+	}
+	
 	// extract using workarounds for TarDownloader and ArchiveDownloader behavior
 	protected function extract(PackageInterface $package, string $file, string $path): PromiseInterface
 	{
@@ -48,6 +59,7 @@ class Downloader extends TarDownloader
 		$fn = str_replace('/', '$', $package->getPrettyName());
 		$marker = "$path/$fn.extracted";
 		$this->addCleanupPath($package, $marker);
+		$this->humanIo->write(sprintf('  - <info>%s</info> (<comment>%s</comment>)', ComposerInstaller::formatHerokuSysName($package->getPrettyName()), $package->getFullPrettyVersion()));
 		return parent::install($package, $path, $output);
 	}
 }

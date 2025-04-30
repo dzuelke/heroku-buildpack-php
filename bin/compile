@@ -429,8 +429,12 @@ status "Installing platform packages..."
 export export_file_path=$bp_dir/export
 export profile_dir_path=$build_dir/.profile.d
 export providedextensionslog_file_path=$(mktemp -t "provided-extensions.log.XXXXXX" -u)
-# grep and sed in a subshell with || true, or a failing grep match will cause the exit code to be 1 if "composer install" fails with code 2
-if composer install -d "$build_dir/.heroku/php" ${HEROKU_PHP_INSTALL_DEV-"--no-dev"} 2>&1 | tee $build_dir/.heroku/php/install.log | ( grep --line-buffered -E '^  - (Instal|Enab)ling heroku-sys/' | sed -u -E -e 's/^  - (Instal|Enab)ling /- /' -e 's/heroku-sys\///g' || true ) | indent; then
+# we make a new file descriptor for the installer plugin to log "human readable" output to, duplicated to stdout via indent
+exec {PHP_PLATFORM_INSTALLER_HUMAN_LOG_FDNO}> >(indent)
+# the installer picks up the FD number in this env var, and writes a human-readable log to it
+# meanwhile, the "raw" output of 'composer install' goes to install.log in case we need it later
+export PHP_PLATFORM_INSTALLER_HUMAN_LOG_FDNO
+if composer install -d "$build_dir/.heroku/php" ${HEROKU_PHP_INSTALL_DEV-"--no-dev"} > $build_dir/.heroku/php/install.log 2>&1; then
 	:
 else
 	code=$?
@@ -506,6 +510,9 @@ else
 	EOF
 fi
 
+# close human log FD (we make new ones for each iteration next)
+exec {PHP_PLATFORM_INSTALLER_HUMAN_LOG_FDNO}>&-
+
 export -n providedextensionslog_file_path # export no longer needed
 if [[ -s "$providedextensionslog_file_path" ]]; then
 	notice_inline "detected userland polyfill packages for PHP extensions"
@@ -525,7 +532,8 @@ if [[ -s "$providedextensionslog_file_path" ]]; then
 			# run a `composer require`, confined to the package we're attempting, allowing any version
 			# we're appending to install.log using tee, and using the same grep/sed filtering of packages as for regular installs
 			# we're letting sed begin the line with a \r character, so that the above `echo -n` gets overwritten
-			if composer require -d "$build_dir/.heroku/php" "${ext_package}.native:*" 2>&1 | tee -a $build_dir/.heroku/php/install.log | ( grep --line-buffered -E '^  - (Instal|Enab)ling heroku-sys/' | sed -u -E -e 's/^  - (Instal|Enab)ling /- /' -e 's/heroku-sys\///g' || true ) | tee "$current_install_log" | indent "" $'\r       '; then
+			exec {PHP_PLATFORM_INSTALLER_HUMAN_LOG_FDNO}> >(tee "$current_install_log" | indent "" $'\r       ')
+			if composer require -d "$build_dir/.heroku/php" "${ext_package}.native:*" >> $build_dir/.heroku/php/install.log 2>&1; then
 				# package added successfully
 				[[ -s "$current_install_log" ]] || { echo -e "- ${ext_name} (already enabled)" | indent "" $'\r       '; } # if nothing was actually installed above, that means the dependency was already satisfied (i.e. extension is statically built into PHP); we need to echo something to that effect
 			else
@@ -533,10 +541,14 @@ if [[ -s "$providedextensionslog_file_path" ]]; then
 				echo -n -e "\r" # reset the line
 				notice_inline "no suitable native version of ${ext_name} available"
 			fi
+			exec {PHP_PLATFORM_INSTALLER_HUMAN_LOG_FDNO}>&-
 		done
 	done {fd_num}< "$providedextensionslog_file_path" # use bash 4.1+ automatic file descriptor allocation (better than hardcoding e.g. "3<"), otherwise this loop's stdin (the lines of the file) will be consumed by programs called inside the loop
 	rm "$current_install_log"
+	exec {fd_num}>&-
 fi
+
+unset PHP_PLATFORM_INSTALLER_HUMAN_LOG_FDNO
 
 # log number of installed platform packages
 mmeasure "platform.count" $(composer show -d "$build_dir/.heroku/php" --installed "heroku-sys/*" 2> /dev/null | wc -l)

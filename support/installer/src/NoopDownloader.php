@@ -12,11 +12,15 @@ class NoopDownloader implements DownloaderInterface
 {
 	protected $io;
 	protected $installMessageFormatter;
+	protected $humanMessageFormatter;
+	protected $humanIo;
 	
-	public function __construct(IOInterface $io, $installMessageFormatter = null)
+	public function __construct(IOInterface $io, $installMessageFormatter = null, $humanMessageFormatter = null, IOInterface $humanIo)
 	{
 		$this->io = $io;
 		$this->installMessageFormatter = $installMessageFormatter ?? function(PackageInterface $package, $path) { return InstallOperation::format($package); };
+		$this->humanMessageFormatter = $humanMessageFormatter ?? function(PackageInterface $package, $path) { return InstallOperation::format($package); };
+		$this->humanIo = $humanIo;
 	}
 	
 	public function getInstallationSource(): string
@@ -36,7 +40,8 @@ class NoopDownloader implements DownloaderInterface
 	
 	public function install(PackageInterface $package, string $path): PromiseInterface
 	{
-		$this->io->writeError("  - " . $this->formatInstallMessage($package, $path));
+		$this->humanIo->write(sprintf("  - %s", ($this->humanMessageFormatter)($package, $path)));
+		$this->io->writeError(sprintf("  - %s", ($this->installMessageFormatter)($package, $path)));
 		return \React\Promise\resolve(null);
 	}
 	
@@ -53,10 +58,5 @@ class NoopDownloader implements DownloaderInterface
 	public function cleanup(string $type, PackageInterface $package, string $path, ?PackageInterface $prevPackage = null): PromiseInterface
 	{
 		return \React\Promise\resolve(null);
-	}
-	
-	protected function formatInstallMessage(PackageInterface $package, string $path): string
-	{
-		return $this->installMessageFormatter->__invoke($package, $path);
 	}
 }
