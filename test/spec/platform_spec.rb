@@ -85,7 +85,7 @@ describe "The PHP Platform Installer" do
 		end
 	end
 	
-	describe "Composer Plugin" do
+	describe "Composer Plugin", :focused => true do
 		before(:all) do
 			@install_tmpdir = Dir.mktmpdir(nil, generator_fixtures_subdir) # this needs to be on the same level as the source fixture so the relative path references to the installer plugin inside composer.json work
 			@export_tmpfile = Tempfile.new("export")
