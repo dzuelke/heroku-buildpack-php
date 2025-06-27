@@ -821,3 +821,6 @@ unset COMPOSER_bak
 rm $build_dir/.heroku/php/bin/composer2
 
 ps afx
+
+# close stdout - otherwise any background/daemon process, possibly having inherited {PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO}, might hang forever
+exec >&-
