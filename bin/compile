@@ -5,7 +5,7 @@
 # fail hard
 set -o pipefail
 # fail harder
-set -eu
+set -eux
 # move hidden files too, just in case
 shopt -s dotglob
 
@@ -817,3 +817,5 @@ export COMPOSER="$COMPOSER_bak"
 unset COMPOSER_bak
 # and remove the composer2 program we needed for platform installs
 rm $build_dir/.heroku/php/bin/composer2
+
+ps afx
