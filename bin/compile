@@ -542,8 +542,6 @@ fi
 # we want to keep export_file_path and profile_dir_path for newrelic and blackfire attempts at the end though
 rm -f "$providedextensionslog_file_path"
 unset providedextensionslog_file_path
-exec {PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO}>&-
-unset PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT
 
 # log number of installed platform packages
 mmeasure "platform.count" $(composer show -d "$build_dir/.heroku/php" --installed "heroku-sys/*" 2> /dev/null | wc -l)
@@ -802,6 +800,9 @@ fi
 # reset COMPOSER for the platform install step
 COMPOSER_bak="$COMPOSER"
 export COMPOSER=composer.json
+
+exec {PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO}>&-
+unset PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT
 
 # unless we're running a CI build...
 if [[ "${HEROKU_PHP_INSTALL_DEV+CI}" != "CI" ]]; then
