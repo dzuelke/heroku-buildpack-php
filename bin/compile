@@ -321,7 +321,7 @@ platform-composer() {
 	export_file_path="${bp_dir}/export" \
 	profile_dir_path="${build_dir}/.profile.d" \
 	${PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO:+"PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO=${PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_FDNO}"} \
-	PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT=7 \
+	PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT="${PHP_PLATFORM_INSTALLER_DISPLAY_OUTPUT_INDENT:-7}" \
 	NO_COLOR=1 \
 	/app/.heroku/php-min/bin/php /app/.heroku/php-min/bin/composer -d "${build_dir}/.heroku/php" "$@"
 }
