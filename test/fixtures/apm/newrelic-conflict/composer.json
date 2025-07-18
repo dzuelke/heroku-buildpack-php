@@ -1,0 +1,22 @@
+{
+	"repositories": [
+		{
+			"type": "package",
+			"package": {
+				"name": "my-polyfill/newrelic",
+				"version": "1.0.0",
+				"type": "metapackage",
+				"require": {
+					"php": "*"
+				},
+				"provide": {
+					"ext-newrelic": "11.99.0.1"
+				}
+			}
+		}
+	],
+	"require": {
+		"php": "*",
+		"my-polyfill/newrelic": "1.0.0"
+	}
+}
